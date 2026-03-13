@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getReviews, saveReview, getAverageRating, Review } from '@/lib/data';
+import { Review } from '@/lib/data';
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -14,24 +14,43 @@ export default function ReviewsPage() {
     refreshData();
   }, []);
 
-  const refreshData = () => {
-    setReviews(getReviews().reverse());
-    setStats(getAverageRating());
+  const refreshData = async () => {
+    try {
+      const res = await fetch('/api/reviews');
+      const data: Review[] = await res.json();
+      const reversed = [...data].reverse();
+      setReviews(reversed);
+      if (data.length > 0) {
+        const sum = data.reduce((acc, r) => acc + r.rating, 0);
+        setStats({
+          average: Math.round((sum / data.length) * 10) / 10,
+          count: data.length,
+        });
+      } else {
+        setStats({ average: 0, count: 0 });
+      }
+    } catch {
+      // ignore
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.comment.trim()) return;
 
-    saveReview({
-      name: form.name,
-      rating: form.rating,
-      comment: form.comment,
+    await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name,
+        rating: form.rating,
+        comment: form.comment,
+      }),
     });
 
     setForm({ name: '', rating: 5, comment: '' });
     setSubmitted(true);
-    refreshData();
+    await refreshData();
     setTimeout(() => setSubmitted(false), 3000);
   };
 

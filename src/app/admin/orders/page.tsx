@@ -1,21 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getOrders, updateOrderStatus, Order } from '@/lib/data';
+import { Order } from '@/lib/data';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
 
   useEffect(() => {
-    setOrders(getOrders().reverse()); // newest first
+    refresh();
   }, []);
 
-  const refresh = () => setOrders(getOrders().reverse());
+  const refresh = async () => {
+    const res = await fetch('/api/orders');
+    const data: Order[] = await res.json();
+    setOrders([...data].reverse()); // newest first
+  };
 
-  const handleStatusChange = (id: string, status: Order['status']) => {
-    updateOrderStatus(id, status);
-    refresh();
+  const handleStatusChange = async (id: string, status: Order['status']) => {
+    await fetch('/api/orders', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status }),
+    });
+    await refresh();
   };
 
   const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);

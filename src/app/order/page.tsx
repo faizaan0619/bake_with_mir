@@ -3,13 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import {
-  getProducts,
-  getProductById,
-  saveOrder,
-  generateWhatsAppLink,
-  Product,
-} from '@/lib/data';
+import { generateWhatsAppLink, Product } from '@/lib/data';
 
 function OrderForm() {
   const searchParams = useSearchParams();
@@ -29,14 +23,19 @@ function OrderForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const allProducts = getProducts().filter((p) => p.stock !== 'out');
-    setProducts(allProducts);
-    if (preselectedId) {
-      const product = getProductById(preselectedId);
-      if (product && product.stock !== 'out') {
-        setForm((f) => ({ ...f, productId: preselectedId }));
-      }
-    }
+    fetch('/api/products')
+      .then(res => res.json())
+      .then((data: Product[]) => {
+        const available = data.filter((p) => p.stock !== 'out');
+        setProducts(available);
+        if (preselectedId) {
+          const product = data.find(p => p.id === preselectedId);
+          if (product && product.stock !== 'out') {
+            setForm((f) => ({ ...f, productId: preselectedId }));
+          }
+        }
+      })
+      .catch(() => {});
   }, [preselectedId]);
 
   const validate = () => {
@@ -52,11 +51,11 @@ function OrderForm() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    const product = getProductById(form.productId);
+    const product = products.find(p => p.id === form.productId);
     if (!product) return;
 
     const order = {
@@ -70,7 +69,12 @@ function OrderForm() {
       specialInstructions: form.specialInstructions,
     };
 
-    saveOrder(order);
+    // Save order via API
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order),
+    });
 
     const whatsappUrl = generateWhatsAppLink(order);
     window.open(whatsappUrl, '_blank');
@@ -79,7 +83,7 @@ function OrderForm() {
   };
 
   const selectedProduct = form.productId
-    ? getProductById(form.productId)
+    ? products.find(p => p.id === form.productId)
     : null;
 
   if (submitted) {

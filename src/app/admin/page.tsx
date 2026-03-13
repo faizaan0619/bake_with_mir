@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getProducts, getOrders } from '@/lib/data';
+import { Product, Order } from '@/lib/data';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -14,16 +14,19 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    const products = getProducts();
-    const orders = getOrders();
-    setStats({
-      totalProducts: products.length,
-      availableProducts: products.filter((p) => p.stock === 'available').length,
-      lowStockProducts: products.filter((p) => p.stock === 'low').length,
-      outOfStockProducts: products.filter((p) => p.stock === 'out').length,
-      totalOrders: orders.length,
-      pendingOrders: orders.filter((o) => o.status === 'pending').length,
-    });
+    Promise.all([
+      fetch('/api/products').then(r => r.json()),
+      fetch('/api/orders').then(r => r.json()),
+    ]).then(([products, orders]: [Product[], Order[]]) => {
+      setStats({
+        totalProducts: products.length,
+        availableProducts: products.filter((p) => p.stock === 'available').length,
+        lowStockProducts: products.filter((p) => p.stock === 'low').length,
+        outOfStockProducts: products.filter((p) => p.stock === 'out').length,
+        totalOrders: orders.length,
+        pendingOrders: orders.filter((o) => o.status === 'pending').length,
+      });
+    }).catch(() => {});
   }, []);
 
   const STAT_CARDS = [

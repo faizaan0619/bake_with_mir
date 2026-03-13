@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
-import { getFeaturedProducts, Product } from '@/lib/data';
+import { Product } from '@/lib/data';
 
 const HIGHLIGHTS = [
   {
@@ -61,7 +61,12 @@ export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setFeatured(getFeaturedProducts().slice(0, 6));
+    fetch('/api/products')
+      .then(res => res.json())
+      .then((products: Product[]) => {
+        setFeatured(products.filter(p => p.featured).slice(0, 6));
+      })
+      .catch(() => {});
     setIsVisible(true);
   }, []);
 

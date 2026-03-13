@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { verifyAdminPin } from '@/lib/data';
 
 const ADMIN_LINKS = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
@@ -32,16 +31,26 @@ export default function AdminLayout({
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verifyAdminPin(pin)) {
-      setIsAuthed(true);
-      setError('');
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('bwm_admin', 'true');
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setIsAuthed(true);
+        setError('');
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('bwm_admin', 'true');
+        }
+      } else {
+        setError('Invalid PIN. Please try again.');
       }
-    } else {
-      setError('Invalid PIN. Please try again.');
+    } catch {
+      setError('Verification failed. Please try again.');
     }
   };
 

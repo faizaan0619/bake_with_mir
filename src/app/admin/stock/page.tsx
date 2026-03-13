@@ -1,21 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getProducts, updateStock, CATEGORIES, Product } from '@/lib/data';
+import { CATEGORIES, Product } from '@/lib/data';
 
 export default function AdminStockPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filterCategory, setFilterCategory] = useState('all');
 
   useEffect(() => {
-    setProducts(getProducts());
+    refresh();
   }, []);
 
-  const refresh = () => setProducts(getProducts());
+  const refresh = async () => {
+    const res = await fetch('/api/products');
+    const data: Product[] = await res.json();
+    setProducts(data);
+  };
 
-  const handleStockChange = (id: string, stock: Product['stock']) => {
-    updateStock(id, stock);
-    refresh();
+  const handleStockChange = async (id: string, stock: Product['stock']) => {
+    await fetch('/api/products/stock', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, stock }),
+    });
+    await refresh();
   };
 
   const filtered =

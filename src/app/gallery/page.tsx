@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGalleryItems, GalleryItem } from '@/lib/data';
+import { GalleryItem } from '@/lib/data';
 
 export default function GalleryPage() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   useEffect(() => {
-    setGalleryItems(getGalleryItems());
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then((data: GalleryItem[]) => setGalleryItems(data))
+      .catch(() => {});
   }, []);
 
   const openLightbox = (index: number) => setLightbox(index);

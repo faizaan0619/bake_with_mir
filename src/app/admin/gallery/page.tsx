@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGalleryItems, addGalleryItem, deleteGalleryItem, GalleryItem } from '@/lib/data';
+import { GalleryItem } from '@/lib/data';
 
 export default function AdminGalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -11,10 +11,14 @@ export default function AdminGalleryPage() {
   const [imageData, setImageData] = useState<string>('');
 
   useEffect(() => {
-    setItems(getGalleryItems());
+    refresh();
   }, []);
 
-  const refresh = () => setItems(getGalleryItems());
+  const refresh = async () => {
+    const res = await fetch('/api/gallery');
+    const data: GalleryItem[] = await res.json();
+    setItems(data);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,21 +32,29 @@ export default function AdminGalleryPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageData || !caption.trim()) return;
-    addGalleryItem({ src: imageData, caption });
+    await fetch('/api/gallery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ src: imageData, caption }),
+    });
     setCaption('');
     setPreview(null);
     setImageData('');
     setShowForm(false);
-    refresh();
+    await refresh();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Remove this image from the gallery?')) {
-      deleteGalleryItem(id);
-      refresh();
+      await fetch('/api/gallery', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      await refresh();
     }
   };
 

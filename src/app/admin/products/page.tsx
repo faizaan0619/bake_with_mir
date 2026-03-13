@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getProducts, addProduct, updateProduct, deleteProduct, CATEGORIES, Product } from '@/lib/data';
+import { CATEGORIES, Product } from '@/lib/data';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,10 +20,14 @@ export default function AdminProductsPage() {
   });
 
   useEffect(() => {
-    setProducts(getProducts());
+    refresh();
   }, []);
 
-  const refresh = () => setProducts(getProducts());
+  const refresh = async () => {
+    const res = await fetch('/api/products');
+    const data: Product[] = await res.json();
+    setProducts(data);
+  };
 
   const resetForm = () => {
     setForm({
@@ -54,14 +58,22 @@ export default function AdminProductsPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      updateProduct({ ...form, id: editingId });
+      await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, id: editingId }),
+      });
     } else {
-      addProduct(form);
+      await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
     }
-    refresh();
+    await refresh();
     resetForm();
   };
 
@@ -80,10 +92,14 @@ export default function AdminProductsPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
-      deleteProduct(id);
-      refresh();
+      await fetch('/api/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      await refresh();
     }
   };
 

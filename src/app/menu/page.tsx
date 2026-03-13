@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
-import { getProducts, CATEGORIES, Product } from '@/lib/data';
+import { CATEGORIES, Product } from '@/lib/data';
 
 export default function MenuPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,7 +12,10 @@ export default function MenuPage() {
   const router = useRouter();
 
   useEffect(() => {
-    setProducts(getProducts());
+    fetch('/api/products')
+      .then(res => res.json())
+      .then((data: Product[]) => setProducts(data))
+      .catch(() => {});
   }, []);
 
   const filtered = useMemo(() => {

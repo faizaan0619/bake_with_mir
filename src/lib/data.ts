@@ -1,5 +1,5 @@
-// Product and Order data layer using localStorage
-// Seed data for the bakery
+// Product and Order types, constants, and helpers
+// All CRUD operations now go through API routes (see /api/*)
 
 export interface Product {
   id: string;
@@ -34,6 +34,12 @@ export interface Review {
   createdAt: string;
 }
 
+export interface GalleryItem {
+  id: string;
+  src: string;
+  caption: string;
+}
+
 export const CATEGORIES = [
   { id: 'all', name: 'All', emoji: '🍰' },
   { id: 'birthday-cakes', name: 'Birthday Cakes', emoji: '🎂' },
@@ -44,7 +50,7 @@ export const CATEGORIES = [
   { id: 'custom-cakes', name: 'Custom Cakes', emoji: '🎀' },
 ];
 
-const SEED_PRODUCTS: Product[] = [
+export const SEED_PRODUCTS: Product[] = [
   {
     id: '1',
     name: 'Classic Vanilla Birthday Cake',
@@ -247,19 +253,7 @@ const SEED_PRODUCTS: Product[] = [
   },
 ];
 
-const PRODUCTS_KEY = 'bwm_products';
-const ORDERS_KEY = 'bwm_orders';
-const REVIEWS_KEY = 'bwm_reviews';
-const GALLERY_KEY = 'bwm_gallery';
-const ADMIN_PIN = '3296';
-
-export interface GalleryItem {
-  id: string;
-  src: string;
-  caption: string;
-}
-
-const SEED_GALLERY: GalleryItem[] = [
+export const SEED_GALLERY: GalleryItem[] = [
   { id: 'g1', src: '/images/birthday-cake.png', caption: 'Classic Vanilla Birthday Cake' },
   { id: 'g2', src: '/images/chocolate-pastry.png', caption: 'Chocolate Croissant' },
   { id: 'g3', src: '/images/cupcakes.png', caption: 'Assorted Cupcakes' },
@@ -269,141 +263,6 @@ const SEED_GALLERY: GalleryItem[] = [
   { id: 'g7', src: '/images/bakery-interior.png', caption: 'Our Cozy Bakery' },
   { id: 'g8', src: '/images/banner.png', caption: 'Bake With Mir — A Delightful Choice' },
 ];
-
-export function getGalleryItems(): GalleryItem[] {
-  if (typeof window === 'undefined') return SEED_GALLERY;
-  const stored = localStorage.getItem(GALLERY_KEY);
-  if (!stored) {
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(SEED_GALLERY));
-    return SEED_GALLERY;
-  }
-  return JSON.parse(stored);
-}
-
-export function addGalleryItem(item: Omit<GalleryItem, 'id'>): void {
-  const items = getGalleryItems();
-  items.push({ ...item, id: 'g' + Date.now() });
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(items));
-  }
-}
-
-export function deleteGalleryItem(id: string): void {
-  const items = getGalleryItems().filter(i => i.id !== id);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(items));
-  }
-}
-
-// Initialize products from seed data if not present
-function initProducts(): Product[] {
-  if (typeof window === 'undefined') return SEED_PRODUCTS;
-  
-  const stored = localStorage.getItem(PRODUCTS_KEY);
-  if (!stored) {
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(SEED_PRODUCTS));
-    return SEED_PRODUCTS;
-  }
-  return JSON.parse(stored);
-}
-
-export function getProducts(): Product[] {
-  return initProducts();
-}
-
-export function getProductById(id: string): Product | undefined {
-  return getProducts().find(p => p.id === id);
-}
-
-export function getProductsByCategory(category: string): Product[] {
-  const products = getProducts();
-  if (category === 'all') return products;
-  return products.filter(p => p.category === category);
-}
-
-export function getFeaturedProducts(): Product[] {
-  return getProducts().filter(p => p.featured);
-}
-
-export function searchProducts(query: string): Product[] {
-  const lower = query.toLowerCase();
-  return getProducts().filter(
-    p => p.name.toLowerCase().includes(lower) || p.description.toLowerCase().includes(lower)
-  );
-}
-
-export function saveProducts(products: Product[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-}
-
-export function updateProduct(updated: Product): void {
-  const products = getProducts();
-  const index = products.findIndex(p => p.id === updated.id);
-  if (index >= 0) {
-    products[index] = updated;
-    saveProducts(products);
-  }
-}
-
-export function addProduct(product: Omit<Product, 'id'>): void {
-  const products = getProducts();
-  const newId = String(Math.max(...products.map(p => Number(p.id))) + 1);
-  products.push({ ...product, id: newId });
-  saveProducts(products);
-}
-
-export function deleteProduct(id: string): void {
-  const products = getProducts().filter(p => p.id !== id);
-  saveProducts(products);
-}
-
-export function updateStock(id: string, stock: Product['stock']): void {
-  const products = getProducts();
-  const product = products.find(p => p.id === id);
-  if (product) {
-    product.stock = stock;
-    saveProducts(products);
-  }
-}
-
-// Orders
-export function getOrders(): Order[] {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(ORDERS_KEY);
-  if (!stored) return [];
-  return JSON.parse(stored);
-}
-
-export function saveOrder(order: Omit<Order, 'id' | 'createdAt' | 'status'>): Order {
-  const orders = getOrders();
-  const newOrder: Order = {
-    ...order,
-    id: String(Date.now()),
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-  };
-  orders.push(newOrder);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  }
-  return newOrder;
-}
-
-export function updateOrderStatus(id: string, status: Order['status']): void {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.status = status;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    }
-  }
-}
-
-export function verifyAdminPin(pin: string): boolean {
-  return pin === ADMIN_PIN;
-}
 
 export function generateWhatsAppLink(order: {
   name: string;
@@ -427,33 +286,4 @@ ${order.specialInstructions ? `📝 *Special Instructions:* ${order.specialInstr
 Thank you for choosing Bake With Mir! 🧁`;
 
   return `https://wa.me/919149774989?text=${encodeURIComponent(message)}`;
-}
-
-// Reviews
-export function getReviews(): Review[] {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(REVIEWS_KEY);
-  if (!stored) return [];
-  return JSON.parse(stored);
-}
-
-export function saveReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
-  const reviews = getReviews();
-  const newReview: Review = {
-    ...review,
-    id: String(Date.now()),
-    createdAt: new Date().toISOString(),
-  };
-  reviews.push(newReview);
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
-  }
-  return newReview;
-}
-
-export function getAverageRating(): { average: number; count: number } {
-  const reviews = getReviews();
-  if (reviews.length === 0) return { average: 0, count: 0 };
-  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-  return { average: Math.round((sum / reviews.length) * 10) / 10, count: reviews.length };
 }
